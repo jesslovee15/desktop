@@ -151,6 +151,7 @@ import { clamp } from '../lib/clamp'
 import * as ipcRenderer from '../lib/ipc-renderer'
 import { showNotification } from '../lib/stores/helpers/show-notification'
 import { DiscardChangesRetryDialog } from './discard-changes/discard-changes-retry-dialog'
+import { PullRequestReview } from './notifications/pull-request-review'
 
 const MinuteInMilliseconds = 1000 * 60
 const HourInMilliseconds = MinuteInMilliseconds * 60
@@ -2103,6 +2104,22 @@ export class App extends React.Component<IAppProps, IAppState> {
             onConfirmDiscardChangesChanged={
               this.onConfirmDiscardChangesPermanentlyChanged
             }
+          />
+        )
+      }
+      case PopupType.PullRequestReview: {
+        return (
+          <PullRequestReview
+            key="pull-request-checks-failed"
+            dispatcher={this.props.dispatcher}
+            shouldChangeRepository={popup.needsSelectRepository}
+            repository={popup.repository}
+            pullRequest={popup.pullRequest}
+            review={popup.review}
+            emoji={this.state.emoji}
+            accounts={this.state.accounts}
+            onSubmit={onPopupDismissedFn}
+            onDismissed={onPopupDismissedFn}
           />
         )
       }
