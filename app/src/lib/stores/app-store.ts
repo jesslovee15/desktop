@@ -1,5 +1,4 @@
 import * as Path from 'path'
-import { pathExists } from 'fs-extra'
 import { escape } from 'querystring'
 import {
   AccountsStore,
@@ -218,7 +217,6 @@ import { ManualConflictResolution } from '../../models/manual-conflict-resolutio
 import { BranchPruner } from './helpers/branch-pruner'
 import { enableHideWhitespaceInDiffOption } from '../feature-flag'
 import { Banner, BannerType } from '../../models/banner'
-import moment from 'moment'
 import { ComputedAction } from '../../models/computed-action'
 import {
   createDesktopStashEntry,
@@ -296,6 +294,8 @@ import {
   getNotificationsEnabled,
 } from './notifications-store'
 import * as ipcRenderer from '../ipc-renderer'
+import { pathExists } from '../../ui/lib/path-exists'
+import { toMilliseconds } from '../to-milliseconds'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -3056,11 +3056,10 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const lastStashEntryCheck = await this.repositoriesStore.getLastStashCheckDate(
       repository
     )
-    const dateNow = moment()
-    const threshold = dateNow.subtract(24, 'hours')
+    const threshold = Date.now() - toMilliseconds(24, 'hours')
     // `lastStashEntryCheck` being equal to `null` means
     // we've never checked for the given repo
-    if (lastStashEntryCheck == null || threshold.isAfter(lastStashEntryCheck)) {
+    if (lastStashEntryCheck == null || threshold > lastStashEntryCheck) {
       await this.repositoriesStore.updateLastStashCheckDate(repository)
       const numEntriesCreatedOutsideDesktop =
         stashEntryCount - desktopStashEntryCount
