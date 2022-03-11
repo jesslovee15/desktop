@@ -16,7 +16,7 @@ import { updateStore, UpdateStatus } from './lib/update-store'
 import { RetryAction } from '../models/retry-actions'
 import { shouldRenderApplicationMenu } from './lib/features'
 import { matchExistingRepository } from '../lib/repository-matching'
-import { getDotComAPIEndpoint } from '../lib/api'
+import { API, getDotComAPIEndpoint } from '../lib/api'
 import { getVersion, getName } from './lib/app-proxy'
 import { getOS } from '../lib/get-os'
 import { validatedRepositoryPath } from '../lib/stores/helpers/validated-repository-path'
@@ -153,6 +153,7 @@ import { showNotification } from '../lib/stores/helpers/show-notification'
 import { DiscardChangesRetryDialog } from './discard-changes/discard-changes-retry-dialog'
 import { PullRequestReview } from './notifications/pull-request-review'
 import { getReleaseSummary } from '../lib/release-notes'
+import { PullRequest, PullRequestRef } from '../models/pull-request'
 
 const MinuteInMilliseconds = 1000 * 60
 const HourInMilliseconds = MinuteInMilliseconds * 60
@@ -2339,9 +2340,92 @@ export class App extends React.Component<IAppProps, IAppState> {
     )
   }
 
-  private viewOnGitHub = (
+  private viewOnGitHub = async (
     repository: Repository | CloningRepository | null
   ) => {
+    if (1 !== NaN) {
+      const state = this.state.selectedState
+
+      if (
+        state == null ||
+        state.type !== SelectionType.Repository ||
+        !isRepositoryWithGitHubRepository(state.repository)
+      ) {
+        return
+      }
+
+      const reviews = {
+        commented_body_without_comments: {
+          prNumber: '11595',
+          reviewId: '592191871',
+        },
+        changes_requested_with_body_and_comments: {
+          prNumber: '14115',
+          reviewId: '902848820',
+        },
+        approved_with_nothing: {
+          prNumber: '14115',
+          reviewId: '903051415',
+        },
+      }
+
+      const reviewData = reviews.approved_with_nothing
+
+      const { prNumber, reviewId } = reviewData
+      const account = this.state.accounts[0]
+      const api = API.fromAccount(account)
+      const apiPR = await api.fetchPullRequest('desktop', 'desktop', prNumber)
+      const pullRequest = new PullRequest(
+        new Date(apiPR.created_at),
+        apiPR.title,
+        apiPR.number,
+        new PullRequestRef(
+          apiPR.head.ref,
+          apiPR.head.sha,
+          state.repository.gitHubRepository
+        ),
+        new PullRequestRef(
+          apiPR.base.ref,
+          apiPR.base.sha,
+          state.repository.gitHubRepository
+        ),
+        apiPR.user.login,
+        apiPR.draft ?? false,
+        apiPR.body
+      )
+
+      const review = await api.fetchPullRequestReview(
+        'desktop',
+        'desktop',
+        prNumber,
+        reviewId
+      )
+
+      if (review === null) {
+        return
+      }
+
+      const repository = state.repository
+      console.log(review)
+      // const title = `@${review.user.login} requested changes on your pull request`
+      // const body = `${pullRequest.title} #${
+      //   pullRequest.pullRequestNumber
+      // }\n${review.body.substring(0, 50)}…`
+
+      //showNotification(title, body, () => {
+      this.props.dispatcher.showPopup({
+        type: PopupType.PullRequestReview,
+        needsSelectRepository: false,
+        needsCheckoutBranch: true,
+        review,
+        pullRequest,
+        repository,
+      })
+      //})
+
+      return
+    }
+
     if (!(repository instanceof Repository)) {
       return
     }

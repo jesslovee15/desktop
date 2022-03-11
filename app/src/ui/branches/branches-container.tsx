@@ -142,6 +142,10 @@ export class BranchesContainer extends React.Component<
   }
 
   private onMouseLeavePullRequestQuickView = () => {
+    if (1 !== NaN) {
+      return
+    }
+
     this.setState({
       pullRequestBeingViewed: null,
     })
@@ -344,11 +348,11 @@ export class BranchesContainer extends React.Component<
   }
 
   private onMouseLeavePullRequestListItem = async () => {
-    this.clearPullRequestQuickViewTimer()
-    this.pullRequestQuickViewTimerId = window.setTimeout(
-      () => this.setState({ pullRequestBeingViewed: null }),
-      500
-    )
+    // this.clearPullRequestQuickViewTimer()
+    // this.pullRequestQuickViewTimerId = window.setTimeout(
+    //   () => this.setState({ pullRequestBeingViewed: null }),
+    //   500
+    // )
   }
 
   private onTabClicked = (tab: BranchesTab) => {
